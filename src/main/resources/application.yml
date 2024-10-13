@@ -1,10 +1,9 @@
 server:
   port: 8888
-
 spring:
   # 配置数据源
   datasource:
-    url: jdbc:mysql://localhost:3306/hrm?useUnicode=true&useSSL=false&characterEncoding=utf8&serverTimezone=GMT%2b8
+    url: jdbc:mysql://127.0.0.1:3306/hrm?useUnicode=true&useSSL=false&characterEncoding=utf8&serverTimezone=GMT%2b8
     username: root
     password: 200206
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -13,7 +12,6 @@ spring:
   mvc:
     path match:
       matching-strategy: ant-path-matcher
-
 
 mybatis-plus:
   configuration:
@@ -24,7 +22,20 @@ mybatis-plus:
 
 file:
   upload:
-    path: D:\LieTouFile\ # 文件存储位置
+    path: /lietou/LieTouFile/uploadFile # 文件存储位置
+
+app:
+  minio:
+    # 访问资源的 URL
+    base-url: "http://152.53.54.231:19000/"
+    # API 端点
+    endpoint: "http://152.53.54.231:19000/"
+    # 上传的 Bucket
+    bucket: cloud
+    # Access Key
+    access-key: minio
+    # Secret Key
+    secret-key: 3k8rXiJaxbbrJRDS
 
 
 

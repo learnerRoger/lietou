@@ -37,7 +37,6 @@ public class Staff implements Serializable {
     @ApiModelProperty("员工编码")
     @TableField("code")
     private String code;
-
     @ExcelColumn("姓名")
     @ApiModelProperty("员工姓名")
     @TableField("name")

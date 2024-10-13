@@ -17,12 +17,18 @@ import com.lietou.exception.ServiceException;
 import com.lietou.mapper.DocsMapper;
 import com.lietou.util.HutoolExcelUtil;
 import com.lietou.vo.StaffDocsVO;
+import io.minio.GetObjectArgs;
+import io.minio.MinioClient;
+import io.minio.PutObjectArgs;
+import io.minio.UploadObjectArgs;
+import jodd.util.StringUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
@@ -30,6 +36,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +48,11 @@ import java.util.Map;
  */
 @Service
 public class DocsService extends ServiceImpl<DocsMapper, Docs> {
+    private static final MinioClient minioClient =
+            MinioClient.builder()
+                    .endpoint("http://152.53.54.231:19000")
+                    .credentials("t2efEwo96X6PFMQOISF5", "aU66uwnvqz7MZ8ImzTuydkuX7HGdnN3FfaJYcFOe")
+                    .build();
 
     @Value("${file.upload.path}") // 引入上传文件的存储路径
     private String fileUploadPath;
@@ -76,9 +88,10 @@ public class DocsService extends ServiceImpl<DocsMapper, Docs> {
                 if (docsList != null && docsList.size() > 0) {
                     filename = docsList.get(0).getName();
                 } else {
-                    File file = new File(fileUploadPath + filename);
-                    // 将文件存储到磁盘
-                    uploadFile.transferTo(file);
+                    UploadToMinio(uploadFile,filename);
+//                    File file = new File(fileUploadPath + filename);
+//                    // 将文件存储到磁盘
+//                    uploadFile.transferTo(file);
                 }
                 // 将文件数据保存到数据库
                 Docs docs = new Docs();
@@ -98,26 +111,57 @@ public class DocsService extends ServiceImpl<DocsMapper, Docs> {
         throw new ServiceException(BusinessStatusEnum.TOKEN_NOT_EXIST);
     }
 
+    /**
+     *  将文件上传到minio
+     * @param fileName
+     * @param fileName
+     */
+    public void UploadToMinio(MultipartFile uploadFile,String fileName) {
+        try {
+            InputStream inputStream = uploadFile.getInputStream();
+            minioClient.putObject(
+                    PutObjectArgs.builder()
+                            .bucket("cloud")
+                            .object(fileName)
+                            .contentType(uploadFile.getContentType())
+                            .stream(inputStream, inputStream.available(), -1)
+                            .build());
+            System.out.println("上传成功！");
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            System.out.println("上传失败！");
+        }
+
+    }
 
     /**
      * 文件下载
      *
-     * @param filename
+     * @param fileName
      * @param response
      * @return
-     * @throws IOException
      */
-    public ResponseDTO download(String filename, HttpServletResponse response) throws IOException {
-        // 通知浏览器以下载的方式打开
-        response.addHeader("Content-Type", "application/octet-stream");
-        response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(filename, "utf-8"));
-        // 通过文件流读取文件
-        File downloadFile = new File(fileUploadPath + filename);
-        OutputStream out = response.getOutputStream();
-        // 读取文件的字节流
-        out.write(FileUtil.readBytes(downloadFile));
-        out.flush();
-        out.close();
+    public ResponseDTO download(String fileName, HttpServletResponse response) {
+        try {
+            InputStream file = minioClient.getObject(GetObjectArgs.builder().bucket("cloud").object(fileName).build());
+            response.reset();
+            response.setHeader("Content-Disposition", "attachment;filename=" +
+                    URLEncoder.encode(fileName.substring(fileName.lastIndexOf("/") + 1), StandardCharsets.UTF_8));
+            response.setContentType("application/octet-stream");
+            response.setCharacterEncoding("UTF-8");
+            // 获取输出流
+            ServletOutputStream servletOutputStream = response.getOutputStream();
+            int len;
+            byte[] buffer = new byte[1024];
+            while ((len = file.read(buffer)) > 0) {
+                servletOutputStream.write(buffer, 0, len);
+            }
+            servletOutputStream.flush();
+            file.close();
+            servletOutputStream.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return Response.success();
     }
 

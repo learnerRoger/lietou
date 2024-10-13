@@ -158,7 +158,7 @@ public class ContractsService extends ServiceImpl<ContractsMapper, Contracts> {
     }
 
     public ResponseDTO down(@RequestBody Contracts contracts) throws IOException {
-        XWPFTemplate template = XWPFTemplate.compile("D:\\LieTouFile\\contracts\\template.docx")
+        XWPFTemplate template = XWPFTemplate.compile("/lietou/LieTouFile/contracts/template.docx")
                 .render((new HashMap<String, Object>() {{
                     put("conCustomname",contracts.getConCustomname());
                     put("conAmount",contracts.getConAmount());
@@ -170,7 +170,7 @@ public class ContractsService extends ServiceImpl<ContractsMapper, Contracts> {
                     put("conSignaddress", contracts.getConSignaddress());
                     put("conSigndate", contracts.getConSigndate());
                 }}));
-        template.writeAndClose(new FileOutputStream("D:\\LieTouFile\\contracts\\contractsDetail\\" + contracts.getConName() + ".docx"));
+        template.writeAndClose(new FileOutputStream("D:\\LieTouFile\\contracts\\contractsDetail" + contracts.getConName() + ".docx"));
         return Response.success();
     }
 

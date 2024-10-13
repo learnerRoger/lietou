@@ -42,7 +42,7 @@ public interface AttendanceMapper extends BaseMapper<Attendance> {
      * @param month
      * @return
      */
-    @Select("select attendance_date from att_attendance where is_deleted = 0 and staff_id = #{id} and status=#{status} and date_format(attendance_date,'%Y%m') = #{month} ")
+    @Select("select attendance_date from att_attendance where is_deleted = 0 and staff_id = #{id} and status=#{status} and date_format(attendance_date,'%   Y%m') = #{month} ")
     List<Date> findLeaveDate(@Param("id") Integer id, @Param("status") Integer status, @Param("month") String month);
-
+        
 }
